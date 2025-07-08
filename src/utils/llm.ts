@@ -1,6 +1,8 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { CoreMessage, generateText } from "ai";
+import { CoreMessage, generateText, tool } from "ai";
+import { z } from "zod";
 import dotenv from "dotenv";
+import { fileReaderTool, urlFetcherTool } from "../tools/index.js";
 
 // 加载环境变量
 dotenv.config();
@@ -42,6 +44,57 @@ export interface ChatMessage {
   content: string;
 }
 
+// 创建工具定义，用于AI SDK
+const aiTools = {
+  fileReader: tool({
+    description: '读取本地文本文件内容，支持 .md, .txt, .html 等格式',
+    parameters: z.object({
+      filePath: z.string().describe('要读取的文件路径')
+    }),
+    execute: async ({ filePath }) => {
+      const abortController = new AbortController();
+      const context = { 
+        abortController, 
+        options: { isNonInteractiveSession: true } 
+      };
+      
+      // 调用自定义工具
+      const generator = fileReaderTool.call({ filePath }, context);
+      const result = await generator.next();
+      
+      if (result.value?.type === 'error') {
+        throw new Error(result.value.data.error);
+      }
+      
+      return result.value?.data || { error: '文件读取失败' };
+    }
+  }),
+  
+  urlFetcher: tool({
+    description: '抓取网页内容并转换为Markdown格式',
+    parameters: z.object({
+      url: z.string().url().describe('要抓取的网页URL地址')
+    }),
+    execute: async ({ url }) => {
+      const abortController = new AbortController();
+      const context = { 
+        abortController, 
+        options: { isNonInteractiveSession: true } 
+      };
+      
+      // 调用自定义工具
+      const generator = urlFetcherTool.call({ url }, context);
+      const result = await generator.next();
+      
+      if (result.value?.type === 'error') {
+        throw new Error(result.value.data.error);
+      }
+      
+      return result.value?.data || { error: '网页抓取失败' };
+    }
+  })
+};
+
 export async function sendMessageToLLM(
   messages: ChatMessage[],
   systemPrompt?: string
@@ -52,12 +105,33 @@ export async function sendMessageToLLM(
     throw new Error(configCheck.error || '配置无效');
   }
 
+  // 改进的系统提示词，包含工具使用说明
+  const enhancedSystemPrompt = `${systemPrompt || 'You are a helpful assistant.'}
+
+你拥有以下工具可以使用：
+
+1. fileReader: 读取本地文件内容
+   - 支持的格式：.md, .txt, .html, .htm, .json, .csv, .xml, .yml, .yaml
+   - 参数：filePath (文件路径)
+   - 返回：{ filename: string, content: string }
+
+2. urlFetcher: 抓取网页内容
+   - 支持HTTP/HTTPS协议的网页
+   - 参数：url (网页地址)
+   - 返回：{ url: string, content: string (markdown), title: string }
+
+当用户询问文件内容或提供文件路径时，使用 fileReader 工具。
+当用户询问网页内容或提供网址时，使用 urlFetcher 工具。
+工具调用后，请基于返回的内容回答用户的问题。`;
+
   try {
     const result = await generateText({
       model: getLanguageModel(),
-      system: systemPrompt || 'You are a helpful assistant.',
+      system: enhancedSystemPrompt,
       temperature: 0.1,
       messages: messages as CoreMessage[],
+      tools: aiTools,
+      maxSteps: 3, // 允许最多3步工具调用
     });
 
     return result.text;

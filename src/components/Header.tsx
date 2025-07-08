@@ -5,7 +5,7 @@ export const Header: React.FC = () => {
   return (
     <Box borderStyle="round" borderColor="cyan" padding={1}>
       <Text color="cyan" bold>
-        Translator Agent v0.2.0
+        Translator Agent v0.3.0
       </Text>
     </Box>
   );

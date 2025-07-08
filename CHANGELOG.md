@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-01-08
+
+### Added
+- 🛠️ **工具系统核心**: 实现完整的工具调用框架和接口定义
+- 📁 **文件读取工具**: 支持读取本地文本文件(.md, .txt, .html, .json, .csv, .xml, .yml等)
+- 🌐 **URL抓取工具**: 自动抓取网页内容并转换为Markdown格式
+- 🤖 **AI工具集成**: 使用AI SDK的tool功能，支持智能工具调用和结果处理
+- 📝 **智能识别**: AI自动识别用户意图，决定是否需要使用工具
+- 🔄 **多步处理**: 支持maxSteps工具链调用，自动处理工具结果
+
+### Changed
+- 🧠 **LLM增强**: 更新系统提示词，包含工具使用说明和指导
+- 📋 **工具说明**: 详细的工具参数说明和返回格式文档
+- 🔍 **错误处理**: 完善的工具调用错误处理和用户友好提示
+
+### Technical
+- 新增依赖：`zod`用于参数验证，`turndown`用于HTML到Markdown转换
+- 新增目录：`src/tools/`包含所有工具实现
+- 工具接口：标准化的Tool、ToolInput、ToolResult接口
+- AI SDK集成：使用`tool()`函数定义和`generateText`集成
+- 异步生成器：使用AsyncGenerator模式处理工具结果
+
+### Usage Examples
+```bash
+# 文件读取示例
+用户: "读取 test.md 文件的内容"
+AI: [自动调用fileReader工具] -> 返回文件内容摘要
+
+# 网页抓取示例  
+用户: "帮我看看 https://example.com 的内容"
+AI: [自动调用urlFetcher工具] -> 返回网页内容摘要
+```
+
 ## [0.2.1] - 2025-01-08
 
 ### Added
