@@ -2,7 +2,9 @@ export interface Message {
   id: string;
   content: string;
   timestamp: Date;
-  type: 'user' | 'system';
+  type: 'user' | 'system' | 'tool-call' | 'tool-result';
+  toolName?: string;
+  toolArgs?: Record<string, any>;
 }
 
 export interface AppState {

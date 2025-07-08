@@ -44,6 +44,13 @@ export interface ChatMessage {
   content: string;
 }
 
+// 工具调用回调接口
+export interface ToolCallbacks {
+  onStatusUpdate: (status: string) => void;
+  onToolCall: (toolName: string, args: any) => void;
+  onToolResult: (toolName: string, result: any) => void;
+}
+
 // 创建工具定义，用于AI SDK
 const aiTools = {
   fileReader: tool({
@@ -97,7 +104,8 @@ const aiTools = {
 
 export async function sendMessageToLLM(
   messages: ChatMessage[],
-  systemPrompt?: string
+  systemPrompt?: string,
+  callbacks?: ToolCallbacks
 ): Promise<string> {
   // 首先验证配置
   const configCheck = validateConfig();
@@ -124,16 +132,102 @@ export async function sendMessageToLLM(
 当用户询问网页内容或提供网址时，使用 urlFetcher 工具。
 工具调用后，请基于返回的内容回答用户的问题。`;
 
+  // 创建增强的工具定义，包含状态回调
+  const enhancedAiTools = {
+    fileReader: tool({
+      description: '读取本地文本文件内容，支持 .md, .txt, .html 等格式',
+      parameters: z.object({
+        filePath: z.string().describe('要读取的文件路径')
+      }),
+      execute: async ({ filePath }) => {
+        // 通知工具调用开始
+        callbacks?.onStatusUpdate(`正在读取文件: ${filePath}`);
+        callbacks?.onToolCall('fileReader', { filePath });
+        
+        const abortController = new AbortController();
+        const context = { 
+          abortController, 
+          options: { isNonInteractiveSession: true } 
+        };
+        
+        try {
+          // 调用自定义工具
+          const generator = fileReaderTool.call({ filePath }, context);
+          const result = await generator.next();
+          
+          if (result.value?.type === 'error') {
+            const error = result.value.data.error;
+            callbacks?.onToolResult('fileReader', { error });
+            throw new Error(error);
+          }
+          
+          const toolResult = result.value?.data || { error: '文件读取失败' };
+          callbacks?.onToolResult('fileReader', toolResult);
+          callbacks?.onStatusUpdate('文件读取完成');
+          
+          return toolResult;
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : '文件读取失败';
+          callbacks?.onToolResult('fileReader', { error: errorMsg });
+          throw error;
+        }
+      }
+    }),
+    
+    urlFetcher: tool({
+      description: '抓取网页内容并转换为Markdown格式',
+      parameters: z.object({
+        url: z.string().url().describe('要抓取的网页URL地址')
+      }),
+      execute: async ({ url }) => {
+        // 通知工具调用开始
+        callbacks?.onStatusUpdate(`正在抓取网页: ${url}`);
+        callbacks?.onToolCall('urlFetcher', { url });
+        
+        const abortController = new AbortController();
+        const context = { 
+          abortController, 
+          options: { isNonInteractiveSession: true } 
+        };
+        
+        try {
+          // 调用自定义工具
+          const generator = urlFetcherTool.call({ url }, context);
+          const result = await generator.next();
+          
+          if (result.value?.type === 'error') {
+            const error = result.value.data.error;
+            callbacks?.onToolResult('urlFetcher', { error });
+            throw new Error(error);
+          }
+          
+          const toolResult = result.value?.data || { error: '网页抓取失败' };
+          callbacks?.onToolResult('urlFetcher', toolResult);
+          callbacks?.onStatusUpdate('网页抓取完成');
+          
+          return toolResult;
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : '网页抓取失败';
+          callbacks?.onToolResult('urlFetcher', { error: errorMsg });
+          throw error;
+        }
+      }
+    })
+  };
+
   try {
+    callbacks?.onStatusUpdate('正在等待AI响应...');
+    
     const result = await generateText({
       model: getLanguageModel(),
       system: enhancedSystemPrompt,
       temperature: 0.1,
       messages: messages as CoreMessage[],
-      tools: aiTools,
+      tools: enhancedAiTools,
       maxSteps: 3, // 允许最多3步工具调用
     });
 
+    callbacks?.onStatusUpdate('AI响应完成');
     return result.text;
   } catch (error: any) {
     console.error('LLM API Error:', error);

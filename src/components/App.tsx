@@ -5,7 +5,7 @@ import { Header } from './Header.js';
 import { MessageHistory } from './MessageHistory.js';
 import { InputBox } from './InputBox.js';
 import { StatusBar } from './StatusBar.js';
-import { sendMessageToLLM, ChatMessage, validateConfig, getConfigStatus } from '../utils/llm.js';
+import { sendMessageToLLM, ChatMessage, validateConfig, getConfigStatus, ToolCallbacks } from '../utils/llm.js';
 
 export const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>({
@@ -37,12 +37,14 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  const addMessage = (content: string, type: 'user' | 'system') => {
+  const addMessage = (content: string, type: 'user' | 'system' | 'tool-call' | 'tool-result', toolName?: string, toolArgs?: Record<string, any>) => {
     const newMessage: Message = {
       id: Date.now().toString(),
       content,
       timestamp: new Date(),
-      type
+      type,
+      toolName,
+      toolArgs
     };
     
     setAppState(prev => ({
@@ -75,18 +77,49 @@ export const App: React.FC = () => {
     try {
       // 准备消息历史，包含新的用户消息
       const chatHistory: ChatMessage[] = [
-        ...appState.messages.map(msg => ({
-          role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
-          content: msg.content
-        })),
+        ...appState.messages
+          .filter(msg => msg.type === 'user' || msg.type === 'system') // 只包含对话消息，不包含工具消息
+          .map(msg => ({
+            role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
+            content: msg.content
+          })),
         {
           role: 'user' as const,
           content: message
         }
       ];
 
+      // 创建工具调用回调
+      const toolCallbacks: ToolCallbacks = {
+        onStatusUpdate: (status: string) => {
+          setAppState(prev => ({
+            ...prev,
+            statusMessage: status
+          }));
+        },
+        onToolCall: (toolName: string, args: any) => {
+          // 添加工具调用消息
+          const argsStr = JSON.stringify(args, null, 2);
+          addMessage(`调用工具: ${toolName}\n参数: ${argsStr}`, 'tool-call', toolName, args);
+        },
+        onToolResult: (toolName: string, result: any) => {
+          // 添加工具结果消息
+          let resultStr: string;
+          if (result.error) {
+            resultStr = `❌ 错误: ${result.error}`;
+          } else if (result.filename && result.content) {
+            resultStr = `✅ 成功读取文件: ${result.filename}\n内容长度: ${result.content.length} 字符`;
+          } else if (result.url && result.title) {
+            resultStr = `✅ 成功抓取网页: ${result.title}\n地址: ${result.url}\n内容长度: ${result.content?.length || 0} 字符`;
+          } else {
+            resultStr = `✅ 工具执行完成\n结果: ${JSON.stringify(result, null, 2)}`;
+          }
+          addMessage(resultStr, 'tool-result', toolName);
+        }
+      };
+
       // 发送到LLM并获取回复
-      const response = await sendMessageToLLM(chatHistory, 'You are a helpful assistant.');
+      const response = await sendMessageToLLM(chatHistory, 'You are a helpful assistant.', toolCallbacks);
       
       // 添加AI回复
       addMessage(response, 'system');
