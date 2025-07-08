@@ -1,0 +1,308 @@
+# CLI 开发最佳实践
+
+## 项目架构
+
+### 入口点设计
+[src/cli.tsx](mdc:src/cli.tsx) 作为主入口，支持命令行参数处理：
+
+```typescript
+#!/usr/bin/env node
+
+import React from 'react';
+import { render } from 'ink';
+import { App } from './components/App.js';
+
+// 检查命令行参数
+const args = process.argv.slice(2);
+
+if (args.includes('--config') || args.includes('-c')) {
+  // 配置检查模式
+  showConfigStatus();
+  process.exit(0);
+}
+
+if (args.includes('--help') || args.includes('-h')) {
+  // 显示帮助信息
+  showHelp();
+  process.exit(0);
+}
+
+// 启动主应用
+render(<App />);
+```
+
+### 命令行参数规范
+```bash
+# 基本使用
+npm run dev                 # 启动聊天界面
+
+# 诊断命令
+npm run dev -- --config    # 检查配置状态
+npm run dev -- -c          # 简写形式
+
+# 帮助信息
+npm run dev -- --help      # 显示帮助
+npm run dev -- -h          # 简写形式
+```
+
+## Ink 框架规范
+
+### 应用布局模式
+参考 [src/components/App.tsx](mdc:src/components/App.tsx) 的4层布局：
+
+```typescript
+<Box flexDirection="column" height="100%" padding={1}>
+  {/* 1. 顶部标题 */}
+  <Header />
+  
+  {/* 2. 中间内容区域 */}
+  <MessageHistory messages={appState.messages} />
+  
+  {/* 3. 底部输入框 */}
+  <InputBox onSubmit={handleSubmit} isLoading={appState.isLoading} />
+  
+  {/* 4. 状态栏 */}
+  <StatusBar statusMessage={appState.statusMessage} error={appState.error} />
+</Box>
+```
+
+### 组件设计原则
+
+#### 单一职责
+每个组件专注一个功能：
+- `Header`: 显示应用标题和版本
+- `MessageHistory`: 消息历史管理和显示
+- `InputBox`: 用户输入处理
+- `StatusBar`: 状态信息显示
+
+#### 属性接口
+```typescript
+// 输入组件
+export interface InputBoxProps {
+  onSubmit: (message: string) => void;
+  isLoading: boolean;
+}
+
+// 状态栏组件
+export interface StatusBarProps {
+  statusMessage: string;
+  error?: string;
+}
+```
+
+## 用户交互模式
+
+### 键盘输入处理
+参考 [src/components/InputBox.tsx](mdc:src/components/InputBox.tsx)：
+
+```typescript
+import { useInput } from 'ink';
+
+export const InputBox: React.FC<InputBoxProps> = ({ onSubmit, isLoading }) => {
+  const [input, setInput] = useState('');
+
+  useInput((inputText, key) => {
+    if (isLoading) return; // 加载时禁用输入
+
+    if (key.return) {
+      // 回车提交
+      if (input.trim()) {
+        onSubmit(input.trim());
+        setInput('');
+      }
+    } else if (key.backspace) {
+      // 退格删除
+      setInput(prev => prev.slice(0, -1));
+    } else if (!key.ctrl && !key.meta) {
+      // 普通字符输入
+      setInput(prev => prev + inputText);
+    }
+  });
+
+  return (
+    <Box borderStyle="round" padding={1}>
+      <Text>
+        {'> '}{input}
+        {isLoading ? ' (正在处理...)' : '_'}
+      </Text>
+    </Box>
+  );
+};
+```
+
+### 状态反馈
+```typescript
+// 加载状态
+<Text color="yellow">正在与AI对话...</Text>
+
+// 成功状态
+<Text color="green">✅ 配置正常，您可以开始聊天了！</Text>
+
+// 错误状态
+<Text color="red">❌ {error}</Text>
+
+// 辅助信息
+<Text dimColor>开始您的第一次对话...</Text>
+```
+
+## 消息显示规范
+
+### 消息格式
+参考 [src/components/MessageHistory.tsx](mdc:src/components/MessageHistory.tsx)：
+
+```typescript
+const MessageItem: React.FC<{ message: Message }> = ({ message }) => {
+  const icon = message.type === 'user' ? '👤' : '🤖';
+  const timeStr = message.timestamp.toLocaleTimeString();
+
+  return (
+    <Box flexDirection="column" marginBottom={1}>
+      <Box>
+        <Text color="cyan">{icon} {message.content}</Text>
+      </Box>
+      <Box marginLeft={3}>
+        <Text dimColor>{timeStr}</Text>
+      </Box>
+    </Box>
+  );
+};
+```
+
+### 滚动处理
+```typescript
+// 自动滚动到最新消息
+useEffect(() => {
+  if (messages.length > 0) {
+    // Ink 自动处理滚动，无需手动实现
+  }
+}, [messages]);
+```
+
+## 错误处理和用户反馈
+
+### 分层错误处理
+```typescript
+// 1. 配置层错误
+if (!configValid) {
+  return (
+    <Box padding={1} borderStyle="round" borderColor="yellow">
+      <Text color="yellow" bold>⚠️ 配置指南</Text>
+      <Text>请编辑 .env 文件，设置您的API密钥</Text>
+    </Box>
+  );
+}
+
+// 2. 网络层错误
+catch (error) {
+  setAppState(prev => ({
+    ...prev,
+    error: error instanceof Error ? error.message : '网络连接失败'
+  }));
+}
+
+// 3. 业务层错误
+if (result.type === 'error') {
+  throw new Error(result.data.error);
+}
+```
+
+### 用户友好提示
+```typescript
+// 配置指南
+<Text>请编辑 .env 文件，将 OPENAI_API_KEY 设置为您的真实API密钥</Text>
+
+// 操作提示
+<Text dimColor>按回车发送消息，Ctrl+C 退出</Text>
+
+// 错误恢复建议
+<Text>请检查网络连接后重试</Text>
+```
+
+## 性能优化
+
+### 组件优化
+```typescript
+// 使用 memo 优化消息项渲染
+export const MessageItem = React.memo<MessageItemProps>(({ message }) => {
+  // 组件实现
+});
+
+// 使用 useCallback 优化事件处理
+const handleSubmit = useCallback((message: string) => {
+  // 处理逻辑
+}, []);
+```
+
+### 状态优化
+```typescript
+// 集中状态管理
+const [appState, setAppState] = useState<AppState>({
+  messages: [],
+  currentInput: '',
+  isLoading: false,
+  statusMessage: '',
+  error: undefined
+});
+
+// 批量状态更新
+const updateState = (updates: Partial<AppState>) => {
+  setAppState(prev => ({ ...prev, ...updates }));
+};
+```
+
+## 配置和诊断
+
+### 配置检查命令
+```typescript
+// 配置状态显示
+console.log('🔧 Translator Agent - 配置状态检查\n');
+console.log(getConfigStatus());
+
+// 网络连接测试
+const networkStatus = await getNetworkStatus();
+console.log(networkStatus);
+```
+
+### 帮助系统
+```typescript
+const helpText = `
+🌍 Translator Agent - 智能AI翻译助手
+
+用法:
+  npm run dev                 启动聊天界面
+  npm run dev -- --config    检查配置状态
+  npm run dev -- --help      显示帮助信息
+
+配置:
+  编辑 .env 文件，设置您的API密钥
+  参考 .env.example 文件获取配置说明
+`;
+```
+
+## 部署和打包
+
+### 构建配置
+```json
+{
+  "scripts": {
+    "dev": "tsx src/cli.tsx",
+    "build": "tsc",
+    "start": "node dist/cli.js"
+  }
+}
+```
+
+### 可执行文件
+```typescript
+#!/usr/bin/env node
+// 确保文件顶部有 shebang 行
+```
+
+### 版本管理
+```typescript
+// 在 Header 组件中显示版本
+<Text color="cyan" bold>Translator Agent v{version}</Text>
+
+// 从 package.json 读取版本
+import { version } from '../../package.json';
+```

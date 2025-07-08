@@ -1,40 +1,104 @@
 ---
-alwaysApply: true
-description: "翻译助手项目基本设置和技术栈指南"
+alwaysApply: false
 ---
-
-# 翻译助手 (Translator Agent) 项目设置
+# Translator Agent 项目架构指南
 
 ## 项目概述
-这是一个基于 AI 的智能翻译 CLI 命令行工具，当前版本v0.1.0实现了类似Gemini-CLI的基础聊天界面。
+这是一个基于 AI 的智能翻译 CLI 工具，当前版本 v0.3.0 支持聊天界面、工具调用和文件/网页处理。
 
-## 技术栈要求
-- **运行时**: Node.js v20+
+## 核心技术栈
+- **运行时**: Node.js v20+ (ESM模块)
 - **语言**: TypeScript (严格模式)
 - **UI框架**: React + Ink (终端界面)
-- **模块系统**: ESM (type: "module")
-- **包管理**: npm
+- **AI集成**: AI SDK + OpenAI兼容API
+- **工具系统**: 自定义工具框架 + Zod验证
 
-## 当前功能特性 (v0.1.0)
-- 💬 基础聊天界面: 类似Gemini-CLI的交互体验
-- 📜 消息历史: 用户消息👤 和系统回复🤖 显示
-- ⌨️ 实时输入: 带边框的输入框，回车提交
-- 📊 状态栏: 显示处理状态和错误信息
-- 🕒 时间戳: 每条消息显示发送时间
+## 关键文件结构
+
+### 入口点
+- [src/cli.tsx](mdc:src/cli.tsx) - CLI主入口，支持命令行参数和应用启动
+- [package.json](mdc:package.json) - 项目配置，当前版本 v0.3.0
+
+### 类型定义
+- [src/types/index.ts](mdc:src/types/index.ts) - 核心类型定义
+
+### 主应用组件
+- [src/components/App.tsx](mdc:src/components/App.tsx) - 主应用，4层布局：Header + 历史 + 输入 + 状态栏
+- [src/components/Header.tsx](mdc:src/components/Header.tsx) - 顶部标题
+- [src/components/MessageHistory.tsx](mdc:src/components/MessageHistory.tsx) - 消息历史显示
+- [src/components/InputBox.tsx](mdc:src/components/InputBox.tsx) - 底部输入框
+- [src/components/StatusBar.tsx](mdc:src/components/StatusBar.tsx) - 状态栏
+
+### 核心工具
+- [src/utils/llm.ts](mdc:src/utils/llm.ts) - LLM集成，包含工具调用逻辑
+- [src/utils/network.ts](mdc:src/utils/network.ts) - 网络连接测试
+- [src/tools/](mdc:src/tools/) - 工具系统目录
+
+### 配置文件
+- [.env](mdc:.env) - 环境配置（API密钥等）
+- [tsconfig.json](mdc:tsconfig.json) - TypeScript配置
+- [CHANGELOG.md](mdc:CHANGELOG.md) - 版本变更记录
 
 ## 开发命令
-- `npm run dev` - 开发模式运行CLI (使用tsx)
+- `npm run dev` - 开发模式运行
 - `npm run build` - 构建生产版本
-- `npm start` - 运行构建后的CLI
-- `npx tsx src/cli.tsx` - 直接运行TypeScript文件
+- `npm run dev -- --config` - 配置诊断
+- `npm run dev -- --help` - 帮助信息
 
-## 项目结构 (v0.1.0)
-- 主入口: [src/cli.tsx](mdc:src/cli.tsx)
-- 类型定义: [src/types/index.ts](mdc:src/types/index.ts)
-- 工具函数: `src/utils/`
-- React组件: `src/components/`
-  - [App.tsx](mdc:src/components/App.tsx) - 主应用组件
-  - [Header.tsx](mdc:src/components/Header.tsx) - 顶部欢迎消息
-  - [MessageHistory.tsx](mdc:src/components/MessageHistory.tsx) - 消息历史显示
-  - [InputBox.tsx](mdc:src/components/InputBox.tsx) - 底部输入框
-  - [StatusBar.tsx](mdc:src/components/StatusBar.tsx) - 状态栏
+## 版本演进
+- v0.0.0: 基础架构
+- v0.1.0: 聊天界面
+- v0.2.0: AI集成
+- v0.2.1: 配置诊断
+- v0.3.0: 工具系统 (当前)
+
+# Translator Agent 项目架构指南
+
+## 项目概述
+这是一个基于 AI 的智能翻译 CLI 工具，当前版本 v0.3.0 支持聊天界面、工具调用和文件/网页处理。
+
+## 核心技术栈
+- **运行时**: Node.js v20+ (ESM模块)
+- **语言**: TypeScript (严格模式)
+- **UI框架**: React + Ink (终端界面)
+- **AI集成**: AI SDK + OpenAI兼容API
+- **工具系统**: 自定义工具框架 + Zod验证
+
+## 关键文件结构
+
+### 入口点
+- [src/cli.tsx](mdc:src/cli.tsx) - CLI主入口，支持命令行参数和应用启动
+- [package.json](mdc:package.json) - 项目配置，当前版本 v0.3.0
+
+### 类型定义
+- [src/types/index.ts](mdc:src/types/index.ts) - 核心类型定义
+
+### 主应用组件
+- [src/components/App.tsx](mdc:src/components/App.tsx) - 主应用，4层布局：Header + 历史 + 输入 + 状态栏
+- [src/components/Header.tsx](mdc:src/components/Header.tsx) - 顶部标题
+- [src/components/MessageHistory.tsx](mdc:src/components/MessageHistory.tsx) - 消息历史显示
+- [src/components/InputBox.tsx](mdc:src/components/InputBox.tsx) - 底部输入框
+- [src/components/StatusBar.tsx](mdc:src/components/StatusBar.tsx) - 状态栏
+
+### 核心工具
+- [src/utils/llm.ts](mdc:src/utils/llm.ts) - LLM集成，包含工具调用逻辑
+- [src/utils/network.ts](mdc:src/utils/network.ts) - 网络连接测试
+- [src/tools/](mdc:src/tools/) - 工具系统目录
+
+### 配置文件
+- [.env](mdc:.env) - 环境配置（API密钥等）
+- [tsconfig.json](mdc:tsconfig.json) - TypeScript配置
+- [CHANGELOG.md](mdc:CHANGELOG.md) - 版本变更记录
+
+## 开发命令
+- `npm run dev` - 开发模式运行
+- `npm run build` - 构建生产版本
+- `npm run dev -- --config` - 配置诊断
+- `npm run dev -- --help` - 帮助信息
+
+## 版本演进
+- v0.0.0: 基础架构
+- v0.1.0: 聊天界面
+- v0.2.0: AI集成
+- v0.2.1: 配置诊断
+- v0.3.0: 工具系统 (当前)

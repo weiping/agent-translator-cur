@@ -1,0 +1,188 @@
+---
+alwaysApply: false
+---
+    parameters: z.object({
+      param1: z.string().describe('参数描述'),
+      param2: z.string().url().describe('URL参数描述')
+    }),
+    execute: async ({ param1, param2 }) => {
+      // 调用自定义工具实现
+      const generator = customTool.call({ param1, param2 }, context);
+      const result = await generator.next();
+      
+      if (result.value?.type === 'error') {
+        throw new Error(result.value.data.error);
+      }
+      
+      return result.value?.data || { error: '操作失败' };
+    }
+  })
+};
+```
+
+### 系统提示词设计
+```typescript
+const enhancedSystemPrompt = `${basePrompt}
+
+你拥有以下工具可以使用：
+
+1. fileReader: 读取本地文件内容
+   - 支持的格式：.md, .txt, .html, .htm, .json, .csv, .xml, .yml, .yaml
+   - 参数：filePath (文件路径)
+   - 返回：{ filename: string, content: string }
+
+2. urlFetcher: 抓取网页内容
+   - 支持HTTP/HTTPS协议的网页
+   - 参数：url (网页地址)
+   - 返回：{ url: string, content: string (markdown), title: string }
+
+当用户询问文件内容或提供文件路径时，使用 fileReader 工具。
+当用户询问网页内容或提供网址时，使用 urlFetcher 工具。
+工具调用后，请基于返回的内容回答用户的问题。`;
+```
+
+## LLM 调用规范
+
+### 标准调用模式
+```typescript
+export async function sendMessageToLLM(
+  messages: ChatMessage[],
+  systemPrompt?: string
+): Promise<string> {
+  // 1. 配置验证
+  const configCheck = validateConfig();
+  if (!configCheck.isValid) {
+    throw new Error(configCheck.error || '配置无效');
+  }
+
+  try {
+    // 2. 调用 generateText
+    const result = await generateText({
+      model: getLanguageModel(),
+      system: enhancedSystemPrompt,
+      temperature: 0.1,
+      messages: messages as CoreMessage[],
+      tools: aiTools,
+      maxSteps: 3, // 允许最多3步工具调用
+    });
+
+    return result.text;
+  } catch (error: any) {
+    // 3. 错误处理和分类
+    throw handleLLMError(error);
+  }
+}
+```
+
+### 消息格式转换
+```typescript
+// App组件中的Message转换为LLM的ChatMessage
+const chatHistory: ChatMessage[] = [
+  ...appState.messages.map(msg => ({
+    role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
+    content: msg.content
+  })),
+  {
+    role: 'user' as const,
+    content: newMessage
+  }
+];
+```
+
+## 错误处理最佳实践
+
+### 分类错误处理
+```typescript
+function handleLLMError(error: any): Error {
+  // API密钥错误
+  if (error?.message?.includes('401') || error?.message?.includes('unauthorized')) {
+    return new Error('API密钥无效，请检查 .env 文件中的 OPENAI_API_KEY');
+  }
+  
+  // 网络连接错误
+  if (error?.message?.includes('network') || error?.code === 'ENOTFOUND') {
+    return new Error('网络连接失败，请检查网络连接和 OPENAI_BASE_URL');
+  }
+  
+  // 配额限制错误
+  if (error?.message?.includes('quota') || error?.message?.includes('limit')) {
+    return new Error('API配额不足或超出限制，请检查账户余额');
+  }
+  
+  return new Error(`AI服务连接失败: ${error?.message || '未知错误'}`);
+}
+```
+
+### UI层错误处理
+```typescript
+// 在组件中的错误处理
+const handleSubmit = async (message: string) => {
+  try {
+    setAppState(prev => ({
+      ...prev,
+      isLoading: true,
+      statusMessage: '正在与AI对话...',
+      error: undefined
+    }));
+
+    const response = await sendMessageToLLM(chatHistory);
+    
+    // 成功处理
+    addMessage(response, 'system');
+    setAppState(prev => ({
+      ...prev,
+      isLoading: false,
+      statusMessage: 'AI回复完成'
+    }));
+  } catch (error) {
+    // 错误处理
+    setAppState(prev => ({
+      ...prev,
+      isLoading: false,
+      error: error instanceof Error ? error.message : '与AI服务通信失败'
+    }));
+  }
+};
+```
+
+## 性能优化建议
+
+### 温度设置
+- 翻译任务：`temperature: 0.1` (更确定性)
+- 创意任务：`temperature: 0.7` (更有创造性)
+- 代码生成：`temperature: 0.2` (平衡准确性和灵活性)
+
+### 最大步数控制
+```typescript
+// 根据任务复杂度设置 maxSteps
+const result = await generateText({
+  // 简单任务：maxSteps: 1
+  // 工具调用：maxSteps: 3  
+  // 复杂推理：maxSteps: 5
+  maxSteps: 3,
+  // ...其他配置
+});
+```
+
+### 消息历史管理
+```typescript
+// 限制历史消息长度避免token超限
+const limitedHistory = messages.slice(-10); // 只保留最近10条消息
+```
+
+## 安全性考虑
+
+### API密钥保护
+- 永远不要将API密钥硬编码在代码中
+- 使用 `.env` 文件存储敏感信息
+- 确保 `.env` 文件在 `.gitignore` 中
+
+### 输入验证
+- 验证用户输入长度和格式
+- 防止注入攻击
+- 对工具调用参数进行严格验证
+
+### 错误信息
+- 不要在错误信息中暴露敏感信息
+- 提供用户友好的错误提示
+- 记录详细错误日志用于调试

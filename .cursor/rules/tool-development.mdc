@@ -1,0 +1,79 @@
+---
+alwaysApply: false
+---
+  inputSchema: z.object({
+    // 定义参数验证规则
+  }),
+
+  async prompt(tool: NewToolInput): Promise<string> {
+    // 生成给LLM的提示信息
+  },
+
+  async *call(input: NewToolInput, context): AsyncGenerator<ToolResult, void, unknown> {
+    try {
+      // 实现工具逻辑
+      yield {
+        type: 'success',
+        data: result
+      };
+    } catch (error: any) {
+      yield {
+        type: 'error',
+        data: { error: error.message }
+      };
+    }
+  }
+};
+```
+
+### 3. 导出工具
+在 [src/tools/index.ts](mdc:src/tools/index.ts) 中添加导出
+
+### 4. 集成到LLM
+在 [src/utils/llm.ts](mdc:src/utils/llm.ts) 的 `aiTools` 中添加工具定义
+
+## 最佳实践
+
+### 错误处理
+- 使用 try-catch 包装核心逻辑
+- 提供用户友好的错误信息
+- 支持 AbortController 中断操作
+
+### 参数验证
+- 使用 Zod 进行严格的参数验证
+- 提供清晰的参数描述
+- 检查必需和可选参数
+
+### 性能考虑
+- 支持大文件处理的流式读取
+- 实现合理的超时机制
+- 避免内存泄漏
+
+### 安全性
+- 验证文件路径和URL格式
+- 限制支持的文件类型
+- 防止路径遍历攻击
+
+## 现有工具参考
+
+### 文件读取工具
+- 支持多种文本格式
+- 路径验证和扩展名检查
+- 友好的错误提示
+
+### URL抓取工具  
+- HTTP/HTTPS协议支持
+- HTML到Markdown转换
+- 网络错误处理
+
+## 测试建议
+
+### 功能测试
+- 正常输入的成功处理
+- 异常输入的错误处理
+- 边界条件测试
+
+### 集成测试
+- AI工具调用流程
+- 多步工具调用场景
+- 错误恢复机制

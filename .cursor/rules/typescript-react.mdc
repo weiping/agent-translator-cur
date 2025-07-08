@@ -1,32 +1,378 @@
 ---
-globs: "*.ts,*.tsx"
-description: "TypeScript和React开发规范"
+globs: *.ts,*.tsx
+alwaysApply: false
 ---
+# TypeScript & React 开发规范
 
-# TypeScript 和 React 开发规范
+## TypeScript 配置
+项目使用严格的TypeScript配置，基于 [tsconfig.json](mdc:tsconfig.json)
 
-## TypeScript 要求
-- 使用严格模式 (`strict: true`)
-- 必须明确定义所有类型，避免使用 `any`
-- 使用接口定义对象结构
-- 导出类型定义供其他模块使用
-- 函数参数和返回值必须有明确类型注解
+### 核心规则
+- **严格模式**: 启用所有严格类型检查
+- **ESM模块**: 使用 ES 模块，所有导入必须包含 `.js` 扩展名
+- **模块解析**: 使用 `bundler` 模式支持现代打包工具
+
+### 导入规范
+```typescript
+// ✅ 正确：包含.js扩展名（即使源文件是.ts）
+import { Tool } from './fileReader.js';
+import { App } from '../components/App.js';
+
+// ❌ 错误：缺少扩展名
+import { Tool } from './fileReader';
+```
 
 ## React + Ink 组件规范
-- 使用函数组件而非类组件
-- 正确使用 React Hooks
-- 组件 props 必须使用 TypeScript 接口定义
-- 使用 Ink 组件库构建终端界面
-- 组件文件命名使用 PascalCase
 
-## 文件命名规范
-- TypeScript 文件: `camelCase.ts`
-- React 组件: `PascalCase.tsx`
-- 类型定义文件: `types.ts` 或 `*.types.ts`
-- 工具函数: `utils.ts` 或 `*.utils.ts`
+### 组件结构
+参考 [src/components/App.tsx](mdc:src/components/App.tsx) 的标准结构：
 
-## 导入导出规范
-- 优先使用具名导出
-- 按字母顺序排列导入
-- 第三方库导入在前，本地模块导入在后
-- 使用相对路径导入本地模块
+```typescript
+import React from 'react';
+import { Box, Text } from 'ink';
+import { ComponentProps } from '../types/index.js';
+
+export const ComponentName: React.FC<ComponentProps> = ({ props }) => {
+  return (
+    <Box>
+      <Text>内容</Text>
+    </Box>
+  );
+};
+```
+
+### 状态管理
+使用 React hooks 和集中化状态：
+
+```typescript
+// 主状态在App组件中管理
+const [appState, setAppState] = useState<AppState>({
+  messages: [],
+  currentInput: '',
+  isLoading: false,
+  statusMessage: '',
+  error: undefined
+});
+
+// 状态更新函数
+const updateState = (updates: Partial<AppState>) => {
+  setAppState(prev => ({ ...prev, ...updates }));
+};
+```
+
+## 类型定义规范
+
+### 接口命名
+遵循 [src/types/index.ts](mdc:src/types/index.ts) 的命名约定：
+
+```typescript
+// 组件属性接口
+export interface ComponentNameProps {
+  prop1: string;
+  prop2?: number; // 可选属性用?标记
+}
+
+// 数据模型接口
+export interface Message {
+  id: string;
+  content: string;
+  timestamp: Date;
+  type: 'user' | 'system';
+}
+
+// 应用状态接口
+export interface AppState {
+  messages: Message[];
+  currentInput: string;
+  isLoading: boolean;
+  statusMessage: string;
+  error?: string;
+}
+```
+
+## 错误处理模式
+
+### 异步函数错误处理
+```typescript
+const handleAsyncOperation = async () => {
+  try {
+    setAppState(prev => ({ ...prev, isLoading: true, error: undefined }));
+    
+    const result = await someAsyncOperation();
+    
+    setAppState(prev => ({ 
+      ...prev, 
+      isLoading: false,
+      data: result 
+    }));
+  } catch (error: any) {
+    setAppState(prev => ({ 
+      ...prev, 
+      isLoading: false,
+      error: error.message 
+    }));
+  }
+};
+```
+
+## Ink 组件最佳实践
+
+### 布局组件
+使用 Box 进行布局控制：
+
+```typescript
+// 垂直布局
+<Box flexDirection="column" height="100%">
+  <Header />
+  <MessageHistory />
+  <InputBox />
+  <StatusBar />
+</Box>
+
+// 水平布局
+<Box flexDirection="row" justifyContent="space-between">
+  <Box flexGrow={1}>内容</Box>
+  <Box>侧边栏</Box>
+</Box>
+```
+
+### 样式规范
+```typescript
+// 边框样式
+<Box borderStyle="round" borderColor="cyan" padding={1}>
+
+// 文本样式
+<Text color="green" bold>成功信息</Text>
+<Text color="red">错误信息</Text>
+<Text dimColor>辅助信息</Text>
+```
+
+### 用户输入处理
+参考 [src/components/InputBox.tsx](mdc:src/components/InputBox.tsx)：
+
+```typescript
+import { useInput } from 'ink';
+
+const InputComponent: React.FC = () => {
+  useInput((input, key) => {
+    if (key.return) {
+      // 处理回车提交
+    }
+    if (key.backspace) {
+      // 处理退格
+    }
+    // 处理其他输入
+  });
+};
+```
+
+## 性能优化
+
+### React.memo 使用
+对于重复渲染的组件使用 memo：
+
+```typescript
+export const MessageItem = React.memo<MessageItemProps>(({ message }) => {
+  return (
+    <Box>
+      <Text>{message.content}</Text>
+    </Box>
+  );
+});
+```
+
+### useCallback 优化
+对于传递给子组件的函数使用 useCallback：
+
+```typescript
+const handleSubmit = useCallback(async (message: string) => {
+  // 处理逻辑
+}, []);
+```
+# TypeScript & React 开发规范
+
+## TypeScript 配置
+项目使用严格的TypeScript配置，基于 [tsconfig.json](mdc:tsconfig.json)
+
+### 核心规则
+- **严格模式**: 启用所有严格类型检查
+- **ESM模块**: 使用 ES 模块，所有导入必须包含 `.js` 扩展名
+- **模块解析**: 使用 `bundler` 模式支持现代打包工具
+
+### 导入规范
+```typescript
+// ✅ 正确：包含.js扩展名（即使源文件是.ts）
+import { Tool } from './fileReader.js';
+import { App } from '../components/App.js';
+
+// ❌ 错误：缺少扩展名
+import { Tool } from './fileReader';
+```
+
+## React + Ink 组件规范
+
+### 组件结构
+参考 [src/components/App.tsx](mdc:src/components/App.tsx) 的标准结构：
+
+```typescript
+import React from 'react';
+import { Box, Text } from 'ink';
+import { ComponentProps } from '../types/index.js';
+
+export const ComponentName: React.FC<ComponentProps> = ({ props }) => {
+  return (
+    <Box>
+      <Text>内容</Text>
+    </Box>
+  );
+};
+```
+
+### 状态管理
+使用 React hooks 和集中化状态：
+
+```typescript
+// 主状态在App组件中管理
+const [appState, setAppState] = useState<AppState>({
+  messages: [],
+  currentInput: '',
+  isLoading: false,
+  statusMessage: '',
+  error: undefined
+});
+
+// 状态更新函数
+const updateState = (updates: Partial<AppState>) => {
+  setAppState(prev => ({ ...prev, ...updates }));
+};
+```
+
+## 类型定义规范
+
+### 接口命名
+遵循 [src/types/index.ts](mdc:src/types/index.ts) 的命名约定：
+
+```typescript
+// 组件属性接口
+export interface ComponentNameProps {
+  prop1: string;
+  prop2?: number; // 可选属性用?标记
+}
+
+// 数据模型接口
+export interface Message {
+  id: string;
+  content: string;
+  timestamp: Date;
+  type: 'user' | 'system';
+}
+
+// 应用状态接口
+export interface AppState {
+  messages: Message[];
+  currentInput: string;
+  isLoading: boolean;
+  statusMessage: string;
+  error?: string;
+}
+```
+
+## 错误处理模式
+
+### 异步函数错误处理
+```typescript
+const handleAsyncOperation = async () => {
+  try {
+    setAppState(prev => ({ ...prev, isLoading: true, error: undefined }));
+    
+    const result = await someAsyncOperation();
+    
+    setAppState(prev => ({ 
+      ...prev, 
+      isLoading: false,
+      data: result 
+    }));
+  } catch (error: any) {
+    setAppState(prev => ({ 
+      ...prev, 
+      isLoading: false,
+      error: error.message 
+    }));
+  }
+};
+```
+
+## Ink 组件最佳实践
+
+### 布局组件
+使用 Box 进行布局控制：
+
+```typescript
+// 垂直布局
+<Box flexDirection="column" height="100%">
+  <Header />
+  <MessageHistory />
+  <InputBox />
+  <StatusBar />
+</Box>
+
+// 水平布局
+<Box flexDirection="row" justifyContent="space-between">
+  <Box flexGrow={1}>内容</Box>
+  <Box>侧边栏</Box>
+</Box>
+```
+
+### 样式规范
+```typescript
+// 边框样式
+<Box borderStyle="round" borderColor="cyan" padding={1}>
+
+// 文本样式
+<Text color="green" bold>成功信息</Text>
+<Text color="red">错误信息</Text>
+<Text dimColor>辅助信息</Text>
+```
+
+### 用户输入处理
+参考 [src/components/InputBox.tsx](mdc:src/components/InputBox.tsx)：
+
+```typescript
+import { useInput } from 'ink';
+
+const InputComponent: React.FC = () => {
+  useInput((input, key) => {
+    if (key.return) {
+      // 处理回车提交
+    }
+    if (key.backspace) {
+      // 处理退格
+    }
+    // 处理其他输入
+  });
+};
+```
+
+## 性能优化
+
+### React.memo 使用
+对于重复渲染的组件使用 memo：
+
+```typescript
+export const MessageItem = React.memo<MessageItemProps>(({ message }) => {
+  return (
+    <Box>
+      <Text>{message.content}</Text>
+    </Box>
+  );
+});
+```
+
+### useCallback 优化
+对于传递给子组件的函数使用 useCallback：
+
+```typescript
+const handleSubmit = useCallback(async (message: string) => {
+  // 处理逻辑
+}, []);
+```

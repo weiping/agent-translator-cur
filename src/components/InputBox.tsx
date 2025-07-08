@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Box, Text, useInput } from 'ink';
 
 interface InputBoxProps {
@@ -9,52 +9,65 @@ interface InputBoxProps {
 export const InputBox: React.FC<InputBoxProps> = ({ onSubmit, isLoading }) => {
   const [input, setInput] = useState('');
   
-  useInput((inputText, key) => {
+  const handleKeyInput = useCallback((inputText: string, key: any) => {
+    // 如果正在加载，禁用所有输入
     if (isLoading) return;
     
+    // 处理特殊键
     if (key.return) {
-      // 回车提交
-      if (input.trim()) {
-        onSubmit(input.trim());
+      // 回车键：提交非空输入
+      const trimmedInput = input.trim();
+      if (trimmedInput) {
+        onSubmit(trimmedInput);
         setInput('');
       }
-    } else if (key.backspace) {
-      // 退格键删除最后一个字符
-      setInput(prev => prev.slice(0, -1));
-    } else if (key.ctrl && inputText === 'c') {
-      // Ctrl+C 退出应用
-      process.exit(0);
-    } else if (key.ctrl && inputText === 'u') {
-      // Ctrl+U 清空输入
-      setInput('');
-    } else if (key.ctrl && inputText === 'l') {
-      // Ctrl+L 清空输入
-      setInput('');
-    } else if (!key.ctrl && !key.meta && !key.escape && inputText) {
-      // 普通字符输入（排除所有控制键）
-      // 过滤掉不可见字符和控制字符
-      if (inputText.length > 0 && inputText.charCodeAt(0) >= 32) {
-        setInput(prev => prev + inputText);
-      }
+      return;
     }
-  });
+    
+    if (key.backspace) {
+      // 退格键：删除最后一个字符
+      setInput(prev => prev.length > 0 ? prev.slice(0, -1) : '');
+      return;
+    }
+    
+    if (key.delete) {
+      // Delete键：在CLI中通常与退格键行为相同
+      setInput(prev => prev.length > 0 ? prev.slice(0, -1) : '');
+      return;
+    }
+    
+    if (key.escape) {
+      // ESC键：清空整个输入
+      setInput('');
+      return;
+    }
+    
+    // 处理普通字符输入
+    if (inputText && 
+        inputText.length > 0 && 
+        !key.ctrl && 
+        !key.meta && 
+        !key.tab &&
+        !key.return &&
+        !key.backspace &&
+        !key.delete &&
+        !key.escape) {
+      // 添加字符到输入
+      setInput(prev => prev + inputText);
+    }
+  }, [input, onSubmit, isLoading]);
+  
+  useInput(handleKeyInput);
 
   return (
     <Box borderStyle="round" borderColor="cyan" paddingX={1}>
-      <Text>
-        <Text color="cyan" bold>{'> '}</Text>
-        <Text>{input}</Text>
-        <Text color={isLoading ? "yellow" : "green"}>
-          {isLoading ? ' (正在处理...)' : '_'}
-        </Text>
+      <Text color="cyan" bold>
+        {'> '}
       </Text>
-      {!isLoading && (
-        <Box marginTop={1}>
-          <Text dimColor>
-            提示: 回车发送 | Ctrl+U 清空 | Ctrl+C 退出
-          </Text>
-        </Box>
-      )}
+      <Text>{input}</Text>
+      <Text color="gray">
+        {isLoading ? ' (正在处理...)' : '_'}
+      </Text>
     </Box>
   );
 }; 
