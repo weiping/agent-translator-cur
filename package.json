@@ -1,6 +1,6 @@
 {
   "name": "translator-agent",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "一个基于 AI 的智能翻译 CLI 命令行工具，支持文本、文件和网页翻译",
   "type": "module",
   "main": "dist/cli.js",

@@ -1,3 +1,18 @@
+export interface Message {
+  id: string;
+  content: string;
+  timestamp: Date;
+  type: 'user' | 'system';
+}
+
+export interface AppState {
+  messages: Message[];
+  currentInput: string;
+  isLoading: boolean;
+  statusMessage: string;
+  error?: string;
+}
+
 export interface TranslationRequest {
   text: string;
   targetLanguage: string;
@@ -26,12 +41,4 @@ export interface Command {
   name: string;
   description: string;
   execute: (args?: string[]) => Promise<void> | void;
-}
-
-export interface AppState {
-  isLoading: boolean;
-  currentInput: string;
-  lastTranslation?: TranslationResponse;
-  config: AppConfig;
-  history: TranslationResponse[];
 } 
