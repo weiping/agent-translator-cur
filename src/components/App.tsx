@@ -1,20 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { AppState, Message } from '../types/index.js';
 import { Header } from './Header.js';
 import { MessageHistory } from './MessageHistory.js';
 import { InputBox } from './InputBox.js';
 import { StatusBar } from './StatusBar.js';
-import { sendMessageToLLM, ChatMessage } from '../utils/llm.js';
+import { sendMessageToLLM, ChatMessage, validateConfig, getConfigStatus } from '../utils/llm.js';
 
 export const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>({
     messages: [],
     currentInput: '',
     isLoading: false,
-    statusMessage: '欢迎使用 Translator Agent AI 聊天助手！',
+    statusMessage: '正在检查配置...',
     error: undefined
   });
+
+  const [configValid, setConfigValid] = useState<boolean>(false);
+
+  // 初始化时检查配置
+  useEffect(() => {
+    const configCheck = validateConfig();
+    setConfigValid(configCheck.isValid);
+    
+    if (configCheck.isValid) {
+      setAppState(prev => ({
+        ...prev,
+        statusMessage: '✅ 配置正常，您可以开始聊天了！'
+      }));
+    } else {
+      setAppState(prev => ({
+        ...prev,
+        error: configCheck.error,
+        statusMessage: '❌ 配置有误，请查看下方错误信息'
+      }));
+    }
+  }, []);
 
   const addMessage = (content: string, type: 'user' | 'system') => {
     const newMessage: Message = {
@@ -31,6 +52,15 @@ export const App: React.FC = () => {
   };
 
   const handleSubmit = async (message: string) => {
+    // 如果配置无效，不允许发送消息
+    if (!configValid) {
+      setAppState(prev => ({
+        ...prev,
+        error: '请先配置正确的API密钥'
+      }));
+      return;
+    }
+
     // 添加用户消息
     addMessage(message, 'user');
     
@@ -96,6 +126,24 @@ export const App: React.FC = () => {
         isLoading={appState.isLoading}
       />
       
+      {/* 配置状态显示 */}
+      {!configValid && (
+        <Box marginY={1} padding={1} borderStyle="round" borderColor="yellow">
+          <Box flexDirection="column">
+            <Text color="yellow" bold>⚠️  配置指南</Text>
+            <Text>
+              请编辑 .env 文件，将 OPENAI_API_KEY 设置为您的真实API密钥
+            </Text>
+            <Box marginTop={1}>
+              <Text dimColor>配置状态：</Text>
+            </Box>
+            {getConfigStatus().split('\n').map((line, i) => (
+              <Text key={i} dimColor>{line}</Text>
+            ))}
+          </Box>
+        </Box>
+      )}
+
       {/* 状态栏 */}
       <StatusBar 
         statusMessage={appState.statusMessage}

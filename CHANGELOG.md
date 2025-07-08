@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-01-08
+
+### Added
+- 🔧 配置诊断系统：实现.env文件读取验证和API配置检查
+- 🌐 网络连接测试：添加网络状态检测和延迟测量功能
+- 📋 配置状态显示：在聊天界面实时显示配置状态和错误指南
+- ⚙️ 命令行诊断：添加`npm run dev -- --config`配置检查命令
+- 🛡️ 输入保护：配置无效时阻止消息发送，避免无效请求
+
+### Changed
+- 🔍 错误提示优化：提供API密钥、网络、配额等分类错误信息
+- 💡 用户体验改进：显示详细的配置指南和解决步骤
+- 📝 环境文件更新：完善.env.example配置说明和注释
+
+### Technical
+- 新增`validateConfig()`和`getConfigStatus()`配置验证函数
+- 新增`src/utils/network.ts`网络连接测试模块
+- 改进LLM错误处理：401、网络、配额错误分类
+- App组件集成配置检查和实时状态显示
+- CLI入口支持配置诊断和帮助命令
+
 ## [0.2.0] - 2025-07-08
 
 ### Added
