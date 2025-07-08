@@ -1,6 +1,52 @@
----
-alwaysApply: false
----
+# AI SDK 集成和开发实践 (v0.4.0更新)
+
+## 工具调用回调机制 🆕 (v0.4.0新增)
+
+### ToolCallbacks接口定义
+```typescript
+export interface ToolCallbacks {
+  onStatusUpdate: (status: string) => void;    // 实时状态更新
+  onToolCall: (toolName: string, args: any) => void;      // 工具调用开始
+  onToolResult: (toolName: string, result: any) => void;  // 工具执行结果
+}
+```
+
+### 增强的LLM调用接口
+```typescript
+export async function sendMessageToLLM(
+  messages: ChatMessage[],
+  systemPrompt?: string,
+  callbacks?: ToolCallbacks  // 🆕 v0.4.0新增回调参数
+): Promise<string>
+```
+
+### 回调使用示例
+```typescript
+const toolCallbacks: ToolCallbacks = {
+  onStatusUpdate: (status: string) => {
+    // 更新UI状态栏显示
+    setAppState(prev => ({ ...prev, statusMessage: status }));
+  },
+  onToolCall: (toolName: string, args: any) => {
+    // 记录工具调用到消息历史
+    const argsStr = JSON.stringify(args, null, 2);
+    addMessage(`调用工具: ${toolName}\n参数: ${argsStr}`, 'tool-call', toolName, args);
+  },
+  onToolResult: (toolName: string, result: any) => {
+    // 记录工具结果到消息历史
+    let resultStr = formatToolResult(result);
+    addMessage(resultStr, 'tool-result', toolName);
+  }
+};
+
+// 调用时传入回调
+const response = await sendMessageToLLM(chatHistory, systemPrompt, toolCallbacks);
+```
+
+## AI SDK 集成标准
+
+### 基础配置
+```
     parameters: z.object({
       param1: z.string().describe('参数描述'),
       param2: z.string().url().describe('URL参数描述')
@@ -15,6 +61,40 @@ alwaysApply: false
       }
       
       return result.value?.data || { error: '操作失败' };
+    }
+  })
+};
+```
+
+### 增强的工具集成 🆕 (v0.4.0)
+```typescript
+// 创建带回调支持的工具定义
+const enhancedAiTools = {
+  fileReader: tool({
+    description: '读取本地文本文件内容，支持 .md, .txt, .html 等格式',
+    parameters: z.object({
+      filePath: z.string().describe('要读取的文件路径')
+    }),
+    execute: async ({ filePath }) => {
+      // v0.4.0新增：状态回调支持
+      callbacks?.onStatusUpdate(`正在读取文件: ${filePath}`);
+      callbacks?.onToolCall('fileReader', { filePath });
+      
+      // 执行自定义工具
+      const generator = fileReaderTool.call({ filePath }, context);
+      const result = await generator.next();
+      
+      if (result.value?.type === 'error') {
+        const error = result.value.data.error;
+        callbacks?.onToolResult('fileReader', { error });
+        throw new Error(error);
+      }
+      
+      const toolResult = result.value?.data || { error: '文件读取失败' };
+      callbacks?.onToolResult('fileReader', toolResult);
+      callbacks?.onStatusUpdate('文件读取完成');
+      
+      return toolResult;
     }
   })
 };
@@ -41,13 +121,14 @@ const enhancedSystemPrompt = `${basePrompt}
 工具调用后，请基于返回的内容回答用户的问题。`;
 ```
 
-## LLM 调用规范
+## LLM 调用规范 (v0.4.0更新)
 
 ### 标准调用模式
 ```typescript
 export async function sendMessageToLLM(
   messages: ChatMessage[],
-  systemPrompt?: string
+  systemPrompt?: string,
+  callbacks?: ToolCallbacks  // 🆕 v0.4.0新增
 ): Promise<string> {
   // 1. 配置验证
   const configCheck = validateConfig();
@@ -56,19 +137,23 @@ export async function sendMessageToLLM(
   }
 
   try {
-    // 2. 调用 generateText
+    // 2. 状态更新
+    callbacks?.onStatusUpdate('正在等待AI响应...');
+    
+    // 3. 调用 generateText (使用增强的工具集)
     const result = await generateText({
       model: getLanguageModel(),
       system: enhancedSystemPrompt,
       temperature: 0.1,
       messages: messages as CoreMessage[],
-      tools: aiTools,
-      maxSteps: 3, // 允许最多3步工具调用
+      tools: enhancedAiTools,  // 🆕 使用支持回调的工具
+      maxSteps: 3,
     });
 
+    callbacks?.onStatusUpdate('AI响应完成');
     return result.text;
   } catch (error: any) {
-    // 3. 错误处理和分类
+    // 4. 错误处理和分类
     throw handleLLMError(error);
   }
 }

@@ -1,0 +1,163 @@
+# 工具调用状态管理指南 (v0.4.0)
+
+## 概述
+v0.4.0版本引入了完整的工具调用状态管理系统，让用户能够实时看到AI工具的执行过程，提升透明度和用户体验。
+
+## 核心架构
+
+### ToolCallbacks接口
+```typescript
+// 定义在 [src/utils/llm.ts](mdc:src/utils/llm.ts)
+export interface ToolCallbacks {
+  onStatusUpdate: (status: string) => void;        // 状态栏更新
+  onToolCall: (toolName: string, args: any) => void;     // 工具调用开始
+  onToolResult: (toolName: string, result: any) => void; // 工具执行结果
+}
+```
+
+### 消息类型扩展
+```typescript
+// 定义在 [src/types/index.ts](mdc:src/types/index.ts)
+interface Message {
+  id: string;
+  content: string;
+  timestamp: Date;
+  type: 'user' | 'system' | 'tool-call' | 'tool-result';  // 扩展类型
+  toolName?: string;                                      // 工具名称
+  toolArgs?: Record<string, any>;                         // 工具参数
+}
+```
+
+## 实现模式
+
+### 状态回调注册
+在 [src/components/App.tsx](mdc:src/components/App.tsx) 的 `handleSubmit` 函数中注册回调：
+
+```typescript
+const toolCallbacks: ToolCallbacks = {
+  onStatusUpdate: (status: string) => {
+    // 实时更新状态栏显示
+    setAppState(prev => ({ ...prev, statusMessage: status }));
+  },
+  
+  onToolCall: (toolName: string, args: any) => {
+    // 记录工具调用到消息历史
+    const argsStr = JSON.stringify(args, null, 2);
+    addMessage(`调用工具: ${toolName}\n参数: ${argsStr}`, 'tool-call', toolName, args);
+  },
+  
+  onToolResult: (toolName: string, result: any) => {
+    // 格式化并记录工具结果
+    const resultStr = formatToolResult(result);
+    addMessage(resultStr, 'tool-result', toolName);
+  }
+};
+```
+
+### 工具结果格式化
+```typescript
+function formatToolResult(result: any): string {
+  if (result.error) {
+    return `❌ 错误: ${result.error}`;
+  }
+  
+  if (result.filename && result.content) {
+    return `✅ 成功读取文件: ${result.filename}\n内容长度: ${result.content.length} 字符`;
+  }
+  
+  if (result.url && result.title) {
+    return `✅ 成功抓取网页: ${result.title}\n地址: ${result.url}\n内容长度: ${result.content?.length || 0} 字符`;
+  }
+  
+  return `✅ 工具执行完成\n结果: ${JSON.stringify(result, null, 2)}`;
+}
+```
+
+## 最佳实践
+
+### 错误传播
+确保工具执行错误能够正确传播到UI：
+```typescript
+try {
+  // 工具执行逻辑
+} catch (error) {
+  const errorMsg = error instanceof Error ? error.message : '工具执行失败';
+  callbacks?.onToolResult(toolName, { error: errorMsg });
+  throw error;  // 重新抛出错误
+}
+```
+
+### 状态一致性
+避免状态更新竞争条件：
+```typescript
+// 正确：使用函数式更新
+setAppState(prev => ({ ...prev, statusMessage: status }));
+
+// 错误：直接状态修改
+setAppState({ ...appState, statusMessage: status });
+```
+
+### 内存管理
+避免在工具调用中保存大量数据到消息历史：
+```typescript
+// 正确：只保存摘要信息
+const resultStr = `✅ 成功读取文件: ${result.filename}\n内容长度: ${result.content.length} 字符`;
+
+// 错误：保存完整内容到消息历史
+const resultStr = `文件内容: ${result.content}`;
+```
+
+## 状态显示规范
+
+### 状态消息设计原则
+1. **描述性**: 清楚说明当前正在执行的操作
+2. **具体性**: 包含操作的目标对象（文件名、URL等）
+3. **进度性**: 表明操作的开始、进行、完成状态
+4. **一致性**: 使用统一的格式和术语
+
+### 状态消息示例
+```typescript
+// 文件读取工具
+"正在读取文件: example.md"     // 开始状态
+"文件读取完成"                // 完成状态
+
+// URL抓取工具  
+"正在抓取网页: https://example.com"  // 开始状态
+"网页抓取完成"                       // 完成状态
+
+// 通用状态
+"正在等待AI响应..."         // AI调用开始
+"AI响应完成"               // AI调用完成
+```
+
+## 消息历史管理
+
+### 消息过滤策略
+为AI对话准备消息历史时，需要过滤掉工具消息：
+
+```typescript
+const chatHistory: ChatMessage[] = [
+  ...appState.messages
+    .filter(msg => msg.type === 'user' || msg.type === 'system') // 只包含对话消息
+    .map(msg => ({
+      role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
+      content: msg.content
+    }))
+];
+```
+
+### 工具消息渲染
+在 [src/components/MessageHistory.tsx](mdc:src/components/MessageHistory.tsx) 中差异化显示：
+
+```typescript
+const getMessageDisplay = (message: Message) => {
+  switch (message.type) {
+    case 'tool-call':
+      return { icon: '🔧', color: 'yellow', label: '工具调用' };
+    case 'tool-result':
+      return { icon: '📋', color: 'magenta', label: '工具结果' };
+    // ... 其他类型
+  }
+};
+```
+
