@@ -1,0 +1,36 @@
+---
+alwaysApply: true
+description: "翻译助手项目基本设置和技术栈指南"
+---
+
+# 翻译助手 (Translator Agent) 项目设置
+
+## 项目概述
+这是一个基于 AI 的智能翻译 CLI 命令行工具，支持文本、文件和网页翻译。
+
+## 技术栈要求
+- **运行时**: Node.js v20+
+- **语言**: TypeScript (严格模式)
+- **UI框架**: React + Ink (终端界面)
+- **AI集成**: AI SDK
+- **包管理**: npm
+
+## 功能特性
+- 🌍 智能翻译: 自动识别输入类型（文本/文件/URL）
+- 💬 交互式界面: 基于 React + Ink 的美观终端界面  
+- 📁 多种输入源: 支持直接文本、本地文件、网页 URL
+- 🎯 命令系统: 丰富的内置命令
+- 🔧 可配置: 自定义默认目标语言、词汇表、主题等设置
+
+## 开发命令
+- `npm run dev` - 开发模式运行CLI (使用tsx)
+- `npm run build` - 构建生产版本
+- `npm start` - 运行构建后的CLI
+- `npx tsx src/cli.tsx` - 直接运行TypeScript文件
+
+## 项目结构
+- 主入口: `src/cli.tsx`
+- 核心逻辑应放在 `src/` 目录下
+- 类型定义: `src/types/`
+- 工具函数: `src/utils/`
+- 组件: `src/components/`

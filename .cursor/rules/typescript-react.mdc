@@ -1,0 +1,32 @@
+---
+globs: "*.ts,*.tsx"
+description: "TypeScript和React开发规范"
+---
+
+# TypeScript 和 React 开发规范
+
+## TypeScript 要求
+- 使用严格模式 (`strict: true`)
+- 必须明确定义所有类型，避免使用 `any`
+- 使用接口定义对象结构
+- 导出类型定义供其他模块使用
+- 函数参数和返回值必须有明确类型注解
+
+## React + Ink 组件规范
+- 使用函数组件而非类组件
+- 正确使用 React Hooks
+- 组件 props 必须使用 TypeScript 接口定义
+- 使用 Ink 组件库构建终端界面
+- 组件文件命名使用 PascalCase
+
+## 文件命名规范
+- TypeScript 文件: `camelCase.ts`
+- React 组件: `PascalCase.tsx`
+- 类型定义文件: `types.ts` 或 `*.types.ts`
+- 工具函数: `utils.ts` 或 `*.utils.ts`
+
+## 导入导出规范
+- 优先使用具名导出
+- 按字母顺序排列导入
+- 第三方库导入在前，本地模块导入在后
+- 使用相对路径导入本地模块

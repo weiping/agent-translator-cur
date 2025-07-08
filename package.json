@@ -1,0 +1,46 @@
+{
+  "name": "translator-agent",
+  "version": "0.0.0",
+  "description": "一个基于 AI 的智能翻译 CLI 命令行工具，支持文本、文件和网页翻译",
+  "type": "module",
+  "main": "dist/cli.js",
+  "bin": {
+    "translator": "dist/cli.js"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.tsx",
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "translator",
+    "ai",
+    "cli",
+    "translation",
+    "typescript",
+    "react",
+    "ink"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ai": "^3.0.0",
+    "ink": "^4.4.1",
+    "react": "^18.2.0",
+    "commander": "^11.1.0",
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.0",
+    "@types/fs-extra": "^11.0.4",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+} 
