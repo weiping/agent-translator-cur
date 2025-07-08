@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-01-08
+
+### Fixed
+- 🐛 **输入框Backspace键修复**: 解决Backspace键无法正常回退删除字符的问题
+- ⌨️ **键盘事件优化**: 改进键盘输入处理逻辑，分离特殊键和普通字符处理
+- 🚀 **性能提升**: 使用useCallback优化InputBox组件性能，减少不必要重渲染
+- 🛡️ **边缘情况处理**: 添加字符串长度检查，避免空字符串操作错误
+
+### Added
+- ✨ **ESC键清空**: 支持使用ESC键快速清空输入框
+- 🔧 **Delete键支持**: Delete键与Backspace键行为一致
+- 📋 **测试指南**: 新增BACKSPACE_FIX_TEST.md详细测试说明
+
+### Changed
+- 🎯 **键盘交互改进**: 更严格的控制键过滤，避免乱码字符输入
+- 💬 **用户体验优化**: 更响应的键盘交互和一致的键盘行为
+
 ## [0.3.0] - 2025-01-08
 
 ### Added
