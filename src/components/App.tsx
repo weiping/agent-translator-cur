@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Box, Text } from 'ink';
-import { AppState } from '../types';
-import { getDefaultConfig } from '../utils/config';
-import { InputArea } from './InputArea';
-import { TranslationResult } from './TranslationResult';
-import { Header } from './Header';
+import { AppState } from '../types/index.js';
+import { getDefaultConfig } from '../utils/config.js';
+import { InputArea } from './InputArea.js';
+import { TranslationResult } from './TranslationResult.js';
+import { Header } from './Header.js';
 
 export const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>({
@@ -15,7 +15,7 @@ export const App: React.FC = () => {
   });
 
   const updateState = (updates: Partial<AppState>) => {
-    setAppState(prev => ({ ...prev, ...updates }));
+    setAppState((prev: AppState) => ({ ...prev, ...updates }));
   };
 
   return (

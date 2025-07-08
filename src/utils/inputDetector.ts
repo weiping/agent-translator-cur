@@ -1,4 +1,4 @@
-import { InputType } from '../types';
+import { InputType } from '../types/index.js';
 
 export function detectInputType(input: string): InputType {
   // URL检测

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import { TranslationResponse } from '../types';
+import { TranslationResponse } from '../types/index.js';
 
 interface TranslationResultProps {
   translation: TranslationResponse;

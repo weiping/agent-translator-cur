@@ -1,4 +1,4 @@
-import { AppConfig } from '../types';
+import { AppConfig } from '../types/index.js';
 
 const DEFAULT_CONFIG: AppConfig = {
   defaultTargetLanguage: 'zh',

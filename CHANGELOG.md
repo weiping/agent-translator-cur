@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI入口文件设置
 - 项目依赖和构建脚本配置
 
+### Fixed
+- 修复 npm run build 构建错误
+- 解决 ESM 模块导入路径问题（添加 .js 扩展名）
+- 修复 TypeScript 严格模式下的类型错误
+- 确保开发和生产版本都能正常运行
+
 ### 技术栈
 - Node.js v20+
 - TypeScript (严格模式)

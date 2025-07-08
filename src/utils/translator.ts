@@ -1,4 +1,4 @@
-import { TranslationRequest, TranslationResponse } from '../types';
+import { TranslationRequest, TranslationResponse } from '../types/index.js';
 
 export async function translateText(request: TranslationRequest): Promise<TranslationResponse> {
   // TODO: 实现AI SDK翻译功能

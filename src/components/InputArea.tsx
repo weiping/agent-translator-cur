@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { AppState, TranslationRequest } from '../types';
-import { detectInputType } from '../utils/inputDetector';
-import { translateText, translateFile, translateUrl } from '../utils/translator';
+import { AppState, TranslationRequest } from '../types/index.js';
+import { detectInputType } from '../utils/inputDetector.js';
+import { translateText, translateFile, translateUrl } from '../utils/translator.js';
 
 interface InputAreaProps {
   appState: AppState;
