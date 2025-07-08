@@ -6,21 +6,21 @@ description: "翻译助手项目基本设置和技术栈指南"
 # 翻译助手 (Translator Agent) 项目设置
 
 ## 项目概述
-这是一个基于 AI 的智能翻译 CLI 命令行工具，支持文本、文件和网页翻译。
+这是一个基于 AI 的智能翻译 CLI 命令行工具，当前版本v0.1.0实现了类似Gemini-CLI的基础聊天界面。
 
 ## 技术栈要求
 - **运行时**: Node.js v20+
 - **语言**: TypeScript (严格模式)
 - **UI框架**: React + Ink (终端界面)
-- **AI集成**: AI SDK
+- **模块系统**: ESM (type: "module")
 - **包管理**: npm
 
-## 功能特性
-- 🌍 智能翻译: 自动识别输入类型（文本/文件/URL）
-- 💬 交互式界面: 基于 React + Ink 的美观终端界面  
-- 📁 多种输入源: 支持直接文本、本地文件、网页 URL
-- 🎯 命令系统: 丰富的内置命令
-- 🔧 可配置: 自定义默认目标语言、词汇表、主题等设置
+## 当前功能特性 (v0.1.0)
+- 💬 基础聊天界面: 类似Gemini-CLI的交互体验
+- 📜 消息历史: 用户消息👤 和系统回复🤖 显示
+- ⌨️ 实时输入: 带边框的输入框，回车提交
+- 📊 状态栏: 显示处理状态和错误信息
+- 🕒 时间戳: 每条消息显示发送时间
 
 ## 开发命令
 - `npm run dev` - 开发模式运行CLI (使用tsx)
@@ -28,9 +28,13 @@ description: "翻译助手项目基本设置和技术栈指南"
 - `npm start` - 运行构建后的CLI
 - `npx tsx src/cli.tsx` - 直接运行TypeScript文件
 
-## 项目结构
-- 主入口: `src/cli.tsx`
-- 核心逻辑应放在 `src/` 目录下
-- 类型定义: `src/types/`
+## 项目结构 (v0.1.0)
+- 主入口: [src/cli.tsx](mdc:src/cli.tsx)
+- 类型定义: [src/types/index.ts](mdc:src/types/index.ts)
 - 工具函数: `src/utils/`
-- 组件: `src/components/`
+- React组件: `src/components/`
+  - [App.tsx](mdc:src/components/App.tsx) - 主应用组件
+  - [Header.tsx](mdc:src/components/Header.tsx) - 顶部欢迎消息
+  - [MessageHistory.tsx](mdc:src/components/MessageHistory.tsx) - 消息历史显示
+  - [InputBox.tsx](mdc:src/components/InputBox.tsx) - 底部输入框
+  - [StatusBar.tsx](mdc:src/components/StatusBar.tsx) - 状态栏

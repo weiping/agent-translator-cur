@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-07-08
+
+### Added
+- 🤖 LLM集成：使用 `ai` 和 `@ai-sdk/openai` 实现真实AI对话
+- 📡 AI服务工具：创建可复用的LLM访问工具函数 `src/utils/llm.ts`
+- ⚙️ 环境配置：支持 `.env` 文件配置API密钥和模型参数
+- 💬 真实对话：用户消息直接发送到LLM，获取AI回复
+- 🔄 状态管理：显示"正在与AI对话..."、"AI回复完成"等状态
+- ❌ 错误处理：优雅处理API连接失败和网络错误
+
+### Changed
+- 升级聊天体验：从模拟回复转为真实AI对话
+- 状态消息优化：更准确的loading和成功状态描述
+- 版本号更新：从 0.1.0 升级到 0.2.0
+
+### Technical
+- 新增依赖：`ai@^3.0.0`, `@ai-sdk/openai`, `dotenv`
+- 环境变量支持：`OPENAI_BASE_URL`, `OPENAI_API_KEY`, `MODEL_NAME`
+- 消息格式转换：App.tsx中的Message转换为LLM的ChatMessage格式
+
 ## [0.1.0] - 2025-07-08
 
 ### Added

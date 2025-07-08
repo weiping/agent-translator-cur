@@ -5,13 +5,14 @@ import { Header } from './Header.js';
 import { MessageHistory } from './MessageHistory.js';
 import { InputBox } from './InputBox.js';
 import { StatusBar } from './StatusBar.js';
+import { sendMessageToLLM, ChatMessage } from '../utils/llm.js';
 
 export const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>({
     messages: [],
     currentInput: '',
     isLoading: false,
-    statusMessage: '欢迎使用 Translator Agent！',
+    statusMessage: '欢迎使用 Translator Agent AI 聊天助手！',
     error: undefined
   });
 
@@ -37,27 +38,40 @@ export const App: React.FC = () => {
     setAppState(prev => ({
       ...prev,
       isLoading: true,
-      statusMessage: '正在处理消息...',
+      statusMessage: '正在与AI对话...',
       error: undefined
     }));
 
     try {
-      // 模拟处理延迟
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 准备消息历史，包含新的用户消息
+      const chatHistory: ChatMessage[] = [
+        ...appState.messages.map(msg => ({
+          role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
+          content: msg.content
+        })),
+        {
+          role: 'user' as const,
+          content: message
+        }
+      ];
+
+      // 发送到LLM并获取回复
+      const response = await sendMessageToLLM(chatHistory, 'You are a helpful assistant.');
       
-      // 添加系统回复
-      addMessage(`收到您的消息: "${message}"`, 'system');
+      // 添加AI回复
+      addMessage(response, 'system');
       
       setAppState(prev => ({
         ...prev,
         isLoading: false,
-        statusMessage: '消息已处理'
+        statusMessage: 'AI回复完成'
       }));
     } catch (error) {
+      console.error('LLM Error:', error);
       setAppState(prev => ({
         ...prev,
         isLoading: false,
-        error: '处理消息时发生错误'
+        error: error instanceof Error ? error.message : '与AI服务通信失败'
       }));
     }
   };
